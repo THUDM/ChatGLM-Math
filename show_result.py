@@ -13,7 +13,7 @@ def load_categories(filename):
     qids = {}
     with jsonlines.open(filename, "r") as f:
         for doc in f:
-            qids[doc["question_id"]] = doc["category"]
+            qids[doc["source"] + str(doc["question_id"])] = doc["category"]
         f.close()
     return qids
 
@@ -21,7 +21,7 @@ def load_second_categories(filename):
     qids = {}
     with jsonlines.open(filename, "r") as f:
         for doc in f:
-            qids[doc["question_id"]] = doc["category"] + "-" + doc["subcategory"]
+            qids[doc["source"] + str(doc["question_id"])] = doc["category"] + "-" + doc["subcategory"]
         f.close()
     return qids
 
@@ -62,11 +62,8 @@ def main(args):
     total = {}
     idx = 0
     for _, line in df_all.iterrows():
-        if line["question_id"] not in categories:
-            idx = idx + 1
-            continue
-        cat = categories[line["question_id"]]
-        sub_cat = second_categories[line["question_id"]]
+        cat = categories[line["source"] + str(line["question_id"])]
+        sub_cat = second_categories[line["source"] + str(line["question_id"])]
         model = line["model_id"]
         if model not in total:
             total[model] = {split:[] for split in splits}
@@ -75,8 +72,7 @@ def main(args):
         total[model][sub_cat].append(line["score"])
         total[model][math_key].append(line["score"])
     class_df = []
-    print(idx)
-    for model in total.keys():  
+    for model in total.keys():
         model_info = [model]
         model_info.append(np.mean(total[model][math_key]))
         model_info.append(len([i for i in total[model][math_key] if i >= 7])/len(total[model][math_key]))
